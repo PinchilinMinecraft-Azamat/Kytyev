@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRIKE | Абонементы</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='admin.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">Strike</div>
+        <nav>
+            <a href="/admin">Запросы</a>
+            <a href="/admin/abonements" class="nav-active">Абонементы</a>
+            <a href="/">Сайт</a>
+        </nav>
+        <a href="/" class="btn">На главную</a>
+    </header>
+
+    <main class="admin-page">
+        <section class="admin-top">
+            <div>
+                <p class="admin-label">Панель администратора</p>
+                <h1>Управление абонементами</h1>
+                <p class="admin-text">Раздел для работы с абонементами.</p>
+            </div>
+        </section>
+
+        <section class="stats-section">
+            <h2>Кратко <span>по абонементам</span></h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Всего абонементов</h3>
+                    <p class="big-number" id="total_abonements_get">{{ total_abonements }}</p>
+                </div>
+                <div class="card">
+                    <h3>Видов</h3>
+                    <p class="big-number" id="unique_abonements_get">{{ unique_abonements }}</p>
+                </div>
+                <div class="card">
+                    <h3>Средний остаток</h3>
+                    <p class="big-number" id="average_remaining_visits_get">{{ average_remaining_visits }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="abonement-editor-section">
+            <h2>Создать <span>абонемент</span></h2>
+            <div class="card form-card">
+                <form id="create-abonement-form" class="abonement-form">
+                    <input type="text" name="name" placeholder="Имя клиента" required>
+                    <input type="text" name="phone" placeholder="Телефон" required>
+                    <input type="text" name="abonement" placeholder="Название абонемента" required>
+                    <input type="number" name="total_visits" placeholder="Количество посещений" min="1" value="8" required>
+                    <button type="submit" class="btn">Создать</button>
+                </form>
+                <p class="form-message" id="create-abonement-message"></p>
+            </div>
+        </section>
+
+        <section id="schedule">
+            <h2>Все <span>абонементы</span></h2>
+
+            {% if abonements %}
+            <div class="schedule-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Телефон</th>
+                            <th>Абонемент</th>
+                            <th>Всего</th>
+                            <th>Осталось</th>
+                            <th>Дата</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in abonements %}
+                        <tr id="abonement-row-{{ item.id }}">
+                            <td>{{ item.id }}</td>
+                            <td><input class="table-input" name="name" form="update-abonement-form-{{ item.id }}" value="{{ item.name }}" required></td>
+                            <td><input class="table-input" name="phone" form="update-abonement-form-{{ item.id }}" value="{{ item.phone }}" required></td>
+                            <td><input class="table-input" name="abonement" form="update-abonement-form-{{ item.id }}" value="{{ item.abonement }}" required></td>
+                            <td><input class="table-input visits-input" type="number" name="total_visits" form="update-abonement-form-{{ item.id }}" value="{{ item.total_visits }}" min="1" required></td>
+                            <td>
+                                <div class="visits-control">
+                                    <button type="button" class="visit-btn" data-id="{{ item.id }}" data-delta="-1">-</button>
+                                    <span class="visits-number" id="remaining-visits-{{ item.id }}">{{ item.remaining_visits }}</span>
+                                    <button type="button" class="visit-btn" data-id="{{ item.id }}" data-delta="1">+</button>
+                                </div>
+                            </td>
+                            <td>{{ item.created_at }}</td>
+                            <td>
+                                <div class="row-actions">
+                                    <form class="update-abonement-form" id="update-abonement-form-{{ item.id }}" data-id="{{ item.id }}">
+                                        <button type="submit" class="save-btn" id="save-abonement-btn-{{ item.id }}">Сохранить</button>
+                                    </form>
+                                    <button type="button" class="refresh-btn" data-id="{{ item.id }}" id="refresh-abonement-btn-{{ item.id }}">Обновить</button>
+                                    <form class="delete-abonement-form" data-id="{{ item.id }}">
+                                        <button type="submit" class="delete-btn" id="abonement-btn-id-{{ item.id }}">Удалить</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card empty-card">
+                <h3>Абонементов пока нет</h3>
+                <p>Когда добавишь первый абонемент в базу, он появится здесь.</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <footer>
+            <p>2026 STRIKE Sports Club. Панель администратора.</p>
+        </footer>
+    </main>
+
+    <script>
+        const createAbonementForm = document.getElementById('create-abonement-form');
+        const createAbonementMessage = document.getElementById('create-abonement-message');
+        const deleteAbonementForms = document.querySelectorAll('.delete-abonement-form');
+        const updateAbonementForms = document.querySelectorAll('.update-abonement-form');
+        const visitButtons = document.querySelectorAll('.visit-btn');
+        const refreshButtons = document.querySelectorAll('.refresh-btn');
+        const totalAbonementsNum = document.getElementById('total_abonements_get');
+        const uniqueAbonementsNum = document.getElementById('unique_abonements_get');
+        const averageRemainingVisitsNum = document.getElementById('average_remaining_visits_get');
+
+        function updateAbonementStats(result) {
+            totalAbonementsNum.textContent = result.total_abonements;
+            uniqueAbonementsNum.textContent = result.unique_abonements;
+            averageRemainingVisitsNum.textContent = result.average_remaining_visits;
+        }
+
+        createAbonementForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(createAbonementForm);
+
+            try {
+                const response = await fetch('/admin/abonements/create', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.status_ok) {
+                    throw new Error(result.message || 'Create failed');
+                }
+
+                createAbonementMessage.textContent = 'Абонемент создан';
+                window.location.reload();
+            } catch (error) {
+                createAbonementMessage.textContent = error.message || 'Ошибка создания';
+            }
+        });
+
+        updateAbonementForms.forEach((form) => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const abonementId = form.dataset.id;
+                const button = document.getElementById(`save-abonement-btn-${abonementId}`);
+                const previousText = button.innerText;
+                button.disabled = true;
+                button.innerText = 'Сохраняем...';
+
+                try {
+                    const response = await fetch(`/admin/abonements/update/${abonementId}`, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.status_ok) {
+                        throw new Error(result.message || 'Update failed');
+                    }
+
+                    updateAbonementStats(result);
+                    button.innerText = 'Сохранено';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 400);
+                } catch (error) {
+                    button.innerText = 'Ошибка';
+                    setTimeout(() => {
+                        button.disabled = false;
+                        button.innerText = previousText;
+                    }, 1200);
+                }
+            });
+        });
+
+        deleteAbonementForms.forEach((form) => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const abonementId = form.dataset.id;
+                const button = document.getElementById(`abonement-btn-id-${abonementId}`);
+
+                if (!abonementId) {
+                    return;
+                }
+
+                const isConfirmed = window.confirm('Удалить этот абонемент?');
+                if (!isConfirmed) {
+                    return;
+                }
+
+                const previousText = button.innerText;
+                button.disabled = true;
+                button.innerText = 'Удаление...';
+
+                try {
+                    const response = await fetch(`/admin/abonements/delete/${abonementId}`, {
+                        method: 'POST'
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.status_ok) {
+                        throw new Error('Delete failed');
+                    }
+
+                    updateAbonementStats(result);
+                    const row = document.getElementById(`abonement-row-${abonementId}`);
+                    if (row) {
+                        row.remove();
+                    }
+                    button.innerText = 'Удалено';
+                    button.style.color = '#ff4444';
+                } catch (error) {
+                    button.innerText = 'Ошибка';
+
+                    setTimeout(() => {
+                        button.disabled = false;
+                        button.innerText = previousText;
+                    }, 1500);
+                }
+            });
+        });
+
+        visitButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const abonementId = button.dataset.id;
+                const delta = button.dataset.delta;
+                const remainingVisits = document.getElementById(`remaining-visits-${abonementId}`);
+                const previousText = button.innerText;
+
+                button.disabled = true;
+                button.innerText = '...';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('delta', delta);
+
+                    const response = await fetch(`/admin/abonements/adjust/${abonementId}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.status_ok) {
+                        throw new Error(result.message || 'Adjust failed');
+                    }
+
+                    remainingVisits.textContent = result.remaining_visits;
+                    updateAbonementStats(result);
+                } catch (error) {
+                    window.alert(error.message || 'Ошибка изменения посещений');
+                } finally {
+                    button.disabled = false;
+                    button.innerText = previousText;
+                }
+            });
+        });
+
+        refreshButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const abonementId = button.dataset.id;
+                const remainingVisits = document.getElementById(`remaining-visits-${abonementId}`);
+                const previousText = button.innerText;
+
+                button.disabled = true;
+                button.innerText = 'Обновляем...';
+
+                try {
+                    const response = await fetch(`/admin/abonements/refresh/${abonementId}`, {
+                        method: 'POST'
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.status_ok) {
+                        throw new Error(result.message || 'Refresh failed');
+                    }
+
+                    remainingVisits.textContent = result.remaining_visits;
+                    updateAbonementStats(result);
+                    button.innerText = 'Обновлено';
+                } catch (error) {
+                    button.innerText = 'Ошибка';
+                } finally {
+                    setTimeout(() => {
+                        button.disabled = false;
+                        button.innerText = previousText;
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

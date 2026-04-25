@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRIKE | Админка</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='admin.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">Strike</div>
+        <nav>
+            <a href="/admin" class="nav-active">Запросы</a>
+            <a href="/admin/abonements">Абонементы</a>
+            <a href="/">Сайт</a>
+        </nav>
+        <a href="/" class="btn">На главную</a>
+    </header>
+
+    <main class="admin-page">
+        <section class="admin-top">
+            <div>
+                <p class="admin-label">Панель администратора</p>
+                <h1>Управление заявками</h1>
+                <p class="admin-text">Здесь можно посмотреть все отправленные формы с сайта и удалить ненужные записи.</p>
+            </div>
+        </section>
+
+        <section class="stats-section">
+            <h2>Кратко <span>по заявкам</span></h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Всего заявок</h3>
+                    <p class="big-number" id="total_regs_get">{{ total_registrations }}</p>
+                </div>
+                <div class="card">
+                    <h3>Направлений</h3>
+                    <p class="big-number" id="unique_cours_get">{{ unique_courses }}</p>
+                </div>
+                <div class="card">
+                    <h3>Последняя заявка</h3>
+                    <p id="last_reg_get">{{ latest_registration }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="schedule">
+            <h2>Все <span>заявки</span></h2>
+
+            {% if registrations %}
+            <div class="schedule-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Телефон</th>
+                            <th>Направление</th>
+                            <th>Дата</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in registrations %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.phone }}</td>
+                            <td>{{ item.course }}</td>
+                            <td>{{ item.created_at }}</td>
+                            <td>
+                                <form class="delete-form" data-id="{{ item.id }}">
+                                    <button type="submit" class="delete-btn" id="btn-id-{{ item.id }}">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card empty-card">
+                <h3>Заявок пока нет</h3>
+                <p>Когда кто-то отправит форму с главной страницы, данные появятся здесь.</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <footer>
+            <p>2026 STRIKE Sports Club. Панель администратора.</p>
+        </footer>
+    </main>
+
+    <script>
+        const deleteForms = document.querySelectorAll('.delete-form');
+
+        deleteForms.forEach((form) => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const registrationId = form.dataset.id;
+                const button = document.getElementById(`btn-id-${registrationId}`);
+                const totalregNum = document.getElementById('total_regs_get');
+                const totaluniqueNum = document.getElementById('unique_cours_get');
+                const totallastTime = document.getElementById('last_reg_get');
+
+                if (!registrationId) {
+                    return;
+                }
+
+                const isConfirmed = window.confirm('Удалить эту заявку?');
+                if (!isConfirmed) {
+                    return;
+                }
+
+                const previousText = button.innerText;
+                button.disabled = true;
+                button.innerText = 'Удаление...';
+
+                try {
+                    const response = await fetch(`/admin/delete/${registrationId}`, {
+                        method: 'POST'
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.status_ok) {
+                        throw new Error('Delete failed');
+                    }
+
+                    totalregNum.textContent = result.total_registrations;
+                    totaluniqueNum.textContent = result.unique_courses;
+                    totallastTime.textContent = result.latest_registration;
+                    button.innerText = 'Удалено';
+                    button.style.color = '#ff4444';
+                } catch (error) {
+                    button.innerText = 'Ошибка';
+
+                    setTimeout(() => {
+                        button.disabled = false;
+                        button.innerText = previousText;
+                    }, 1500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

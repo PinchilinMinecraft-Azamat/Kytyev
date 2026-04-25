@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRIKE | Спортивный Клуб</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class="logo">Strike</div>
+        <nav>
+            <a href="#about">О клубе</a>
+            <a href="#services">Направления</a>
+            <a href="#schedule">Расписание</a>
+            <a href="#schedule">Тренеры</a>
+            <a href="#contacts">Контакты</a>
+        </nav>
+        <a href="#contacts" class="btn">Вступить в клуб</a>
+    </header>
+
+    <section class="hero">
+        <h1>ТВОЯ ПОБЕДА <br><span>НАЧИНАЕТСЯ ЗДЕСЬ</span></h1>
+        <p>Современное пространство для тех, кто не ищет оправданий. Профессиональное оборудование, лучшие тренеры и сообщество сильных.</p>
+        <div class="hero-btns">
+            <a href="#contacts" class="btn">Записаться</a>
+        </div>
+    </section>
+
+    <section id="services">
+        <h2>Наши <span>Направления</span></h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Кроссфит</h3>
+                <p>Максимальная интенсивность для развития силы, выносливости и гибкости.</p>
+            </div>
+            <div class="card">
+                <h3>Единоборства</h3>
+                <p>Бокс, ММА и кикбоксинг под руководством мастеров спорта.</p>
+            </div>
+            <div class="card">
+                <h3>Йога & Пилатес</h3>
+                <p>Восстановление, гибкость и контроль над своим телом и разумом.</p>
+            </div>
+            <div class="card">
+                <h3>Тренажерный зал</h3>
+                <p>Зона свободных весов и современные кардио-тренажеры мировых брендов.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="schedule">
+        <h2>График <span>Занятий</span></h2>
+        <div class="schedule-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Время</th>
+                        <th>Понедельник</th>
+                        <th>Среда</th>
+                        <th>Пятница</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>08:00</td>
+                        <td>CrossFit (Алексей В.)</td>
+                        <td>CrossFit (Алексей В.)</td>
+                        <td>Yoga (Мария С.)</td>
+                    </tr>
+                    <tr>
+                        <td>10:00</td>
+                        <td>Boxing (Игорь Т.)</td>
+                        <td>MMA (Игорь Т.)</td>
+                        <td>Boxing (Игорь Т.)</td>
+                    </tr>
+                    <tr>
+                        <td>18:00</td>
+                        <td>Power Lifting</td>
+                        <td>Stretching</td>
+                        <td>Power Lifting</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="contacts">
+        <h2>Готовы <span>начать?</span></h2>
+        <div class="contact-flex">
+            <div class="contact-form">
+                <form id="reqform" novalidate>
+                    <input type="text" name="name" placeholder="Ваше имя" id="name_register" required>
+                    <input type="tel" name="phone" placeholder="Номер телефона" id="phone_register" required>
+                    <select name="course" id="course_register">
+                        <option value="">Выберите направление</option>
+                        <option value="CrossFit">Кроссфит</option>
+                        <option value="Martial_arts">Единоборства</option>
+                        <option value="yoga">Йога</option>
+                    </select>
+                    <button type="submit" class="btn btn-full" id="reg_btn">Записаться на пробную</button>
+                </form>
+            </div>
+            <div class="contact-details">
+                <h3>Контакты</h3>
+                <br>
+                <p><strong>Адрес:</strong> ул. Артема, 12, Стерлитамак</p>
+                <p><strong>Телефон:</strong> +7 (999) 000-11-22</p>
+                <p><strong>E-mail:</strong> info@strike-club.ru</p>
+                <br>
+                <p><strong>Режим работы:</strong><br>Будни: 07:00 — 23:00<br>Выходные: 09:00 — 21:00</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>2026 STRIKE Sports Club. Все права защищены.</p>
+    </footer>
+
+
+    <script>
+        const form = document.getElementById('reqform');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            
+            const username = form.name.value.trim();
+            const phone = form.phone.value.trim();
+            const course = form.course.value.trim();
+
+            const prev_borderColor = document.getElementById('name_register').style.borderColor
+            const prev_btn_text = document.getElementById('reg_btn').innerText
+            const prev_btn_backgroung = document.getElementById('reg_btn').style.backgroundColor
+            const prev_btn_boxshadow = document.getElementById('reg_btn').style.boxShadow
+
+            let hasError = false;
+
+            if (!username) {
+                document.getElementById('name_register').style.borderColor = "#ff4444";
+                hasError = true;
+            }
+            if (!phone ) {
+                document.getElementById('phone_register').style.borderColor = "#ff4444";
+                hasError = true;
+            }
+            if (!course) {
+                document.getElementById('course_register').style.borderColor = "#ff4444";
+                hasError = true;
+            }
+            
+            if (hasError) {
+                const btn = document.getElementById('reg_btn');
+                btn.innerText = "Заполните все поля!";
+                btn.style.backgroundColor = "#ff4444";
+                btn.style.boxShadow = "0 0 20px #ff4444";
+
+                setTimeout(() => {
+                    document.getElementById('name_register').style.borderColor = "#ccff00";
+                    document.getElementById('phone_register').style.borderColor = "#ccff00";
+                    document.getElementById('course_register').style.borderColor = "#ccff00";
+                    btn.innerText = "Записаться на пробную";
+                    btn.style.backgroundColor = "";
+                    btn.style.boxShadow = "";
+                }, 2000);
+
+                return;
+            }
+
+            const response = await fetch('/submit_register', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (!result.status_ok){
+                const btn = document.getElementById('reg_btn');
+                btn.innerText = result.message;
+                btn.style.backgroundColor = "#ff4444";
+                btn.style.boxShadow = "0 0 20px #ff4444";
+
+                setTimeout(() => {
+                    btn.innerText = "Записаться на пробную";
+                    btn.style.backgroundColor = "";
+                    btn.style.boxShadow = "";
+                }, 2000);
+
+                return;
+            }
+            const btn = document.getElementById('reg_btn');
+            btn.innerText = result.message;
+            btn.style.backgroundColor = "#66ff00";
+
+            setTimeout(() => {
+                btn.innerText = "Записаться на пробную";
+                btn.style.backgroundColor = "";
+                btn.style.boxShadow = "";
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
+
+
