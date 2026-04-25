@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мини-калькулятор</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eeeeee;
+        }
+
+        .calculator {
+            width: 360px;
+            margin: 40px auto;
+            background: white;
+            border: 1px solid #999999;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 5px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #777777;
+        }
+
+        button {
+            margin-top: 15px;
+            background: #dddddd;
+            cursor: pointer;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>Мини-калькулятор</h1>
+        <form method="post">
+            <label for="first_number">Первое число</label>
+            <input id="first_number" name="first_number" value="{{ first_number }}">
+
+            <label for="operation">Операция</label>
+            <select id="operation" name="operation">
+                {% for sign, title in operations.items() %}
+                    <option value="{{ sign }}" {% if sign == operation %}selected{% endif %}>
+                        {{ sign }} ({{ title }})
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="second_number">Второе число</label>
+            <input id="second_number" name="second_number" value="{{ second_number }}">
+
+            <button type="submit">Посчитать</button>
+        </form>
+
+        {% if answer %}
+            <div class="result">{{ answer }}</div>
+        {% endif %}
+    </div>
+</body>
+</html>

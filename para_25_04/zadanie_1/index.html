@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Карточки пользователей</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eeeeee;
+        }
+
+        .page {
+            width: 800px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #999999;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .person {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .email {
+            color: blue;
+        }
+
+        .city {
+            margin: 8px 0 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>Карточки пользователей</h1>
+
+        {% for user in users %}
+            <div class="card">
+                <div class="person">{{ user.name }}, {{ user.age }} лет</div>
+                <a class="email" href="mailto:{{ user.email }}">{{ user.email }}</a>
+                <p class="city">Город: {{ user.city }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
