@@ -153,6 +153,42 @@ h2 span {
     color: var(--text-gray);
 }
 
+.form-card {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.abonement-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.abonement-form input,
+.table-input {
+    width: 100%;
+    background: #121212;
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font: inherit;
+}
+
+.abonement-form input:focus,
+.table-input:focus {
+    outline: none;
+    border-color: rgba(204, 255, 0, 0.55);
+    box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.12);
+}
+
+.form-message {
+    margin-top: 14px;
+    min-height: 24px;
+    color: var(--primary) !important;
+}
+
 .big-number {
     font-size: 42px;
     font-weight: 900;
@@ -193,6 +229,43 @@ form {
     margin: 0;
 }
 
+.row-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.save-btn {
+    background: rgba(204, 255, 0, 0.12);
+    color: var(--primary);
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    padding: 10px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.save-btn:hover {
+    background: rgba(204, 255, 0, 0.2);
+    box-shadow: 0 0 14px rgba(204, 255, 0, 0.18);
+}
+
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 10px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
 .delete-btn {
     background: transparent;
     color: #ff5c5c;
@@ -228,6 +301,39 @@ footer {
     cursor: not-allowed;
 }
 
+.visits-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.visit-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    background: rgba(204, 255, 0, 0.08);
+    color: var(--primary);
+    font-size: 18px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.visit-btn:hover {
+    background: rgba(204, 255, 0, 0.18);
+}
+
+.visits-number {
+    min-width: 32px;
+    text-align: center;
+    font-weight: 900;
+    color: var(--text-light);
+}
+
+.visits-input {
+    max-width: 100px;
+}
+
 @media (max-width: 768px) {
     nav {
         display: none;
@@ -239,5 +345,14 @@ footer {
 
     .btn {
         padding: 10px 16px;
+    }
+
+    .abonement-form {
+        grid-template-columns: 1fr;
+    }
+
+    .row-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

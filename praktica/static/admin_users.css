@@ -53,10 +53,7 @@ nav a {
     transition: var(--transition);
 }
 
-nav a:hover {
-    color: var(--primary);
-}
-
+nav a:hover,
 .nav-active {
     color: var(--primary);
 }
@@ -86,10 +83,6 @@ nav a:hover {
 
 .admin-top {
     padding: 50px 5% 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -127,16 +120,6 @@ h2 span {
     color: var(--primary);
 }
 
-.stats-section {
-    padding-top: 40px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 30px;
-}
-
 .card {
     background: var(--bg-card);
     padding: 35px;
@@ -144,19 +127,47 @@ h2 span {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.card h3 {
-    margin-bottom: 15px;
-    font-size: 22px;
+.form-card {
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.card p {
-    color: var(--text-gray);
+.admin-user-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: end;
 }
 
-.big-number {
-    font-size: 42px;
-    font-weight: 900;
-    color: var(--primary) !important;
+input,
+select {
+    width: 100%;
+    background: #121212;
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font: inherit;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: rgba(204, 255, 0, 0.55);
+    box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.12);
+}
+
+.form-error,
+.form-success {
+    margin-top: 14px;
+}
+
+.form-error {
+    color: #ff5c5c;
+}
+
+.form-success {
+    color: var(--primary);
 }
 
 #schedule {
@@ -170,7 +181,7 @@ h2 span {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 800px;
+    min-width: 760px;
     background: var(--bg-card);
     border-radius: 10px;
     overflow: hidden;
@@ -193,6 +204,28 @@ form {
     margin: 0;
 }
 
+.role-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.save-btn {
+    background: rgba(204, 255, 0, 0.12);
+    color: var(--primary);
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    padding: 10px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.save-btn:hover {
+    background: rgba(204, 255, 0, 0.2);
+    box-shadow: 0 0 14px rgba(204, 255, 0, 0.18);
+}
+
 .delete-btn {
     background: transparent;
     color: #ff5c5c;
@@ -209,12 +242,6 @@ form {
     box-shadow: 0 0 14px rgba(255, 92, 92, 0.22);
 }
 
-.empty-card {
-    max-width: 700px;
-    margin: 0 auto;
-    text-align: center;
-}
-
 footer {
     padding: 50px 5%;
     text-align: center;
@@ -223,21 +250,21 @@ footer {
     font-size: 14px;
 }
 
-.delete-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 @media (max-width: 768px) {
     nav {
         display: none;
     }
 
-    .admin-top {
-        flex-direction: column;
-    }
-
     .btn {
         padding: 10px 16px;
+    }
+
+    .admin-user-form {
+        grid-template-columns: 1fr;
+    }
+
+    .role-form {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

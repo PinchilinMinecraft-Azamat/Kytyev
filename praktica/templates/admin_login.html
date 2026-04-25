@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRIKE | Вход в админку</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='admin_login.css') }}">
+</head>
+<body class="login-body">
+    <main class="login-page">
+        <section class="login-card">
+            <p class="admin-label">Панель администратора</p>
+            <h1>Вход</h1>
+            <form class="login-form" method="post" action="/admin/login">
+                <label>
+                    <span>Логин</span>
+                    <input type="text" name="username" autocomplete="username" required autofocus>
+                </label>
+                <label>
+                    <span>Пароль</span>
+                    <input type="password" name="password" autocomplete="current-password" required>
+                </label>
+                {% if error %}
+                <p class="login-error">{{ error }}</p>
+                {% endif %}
+                <button type="submit" class="btn btn-full">Войти</button>
+            </form>
+            <a class="login-back-link" href="/">На главную</a>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,8 +1,9 @@
+import hashlib
 import sqlite3
 from pathlib import Path
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -10,12 +11,98 @@ from fastapi.templating import Jinja2Templates
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "registrations.db"
+ADMIN_COOKIE_NAME = "admin_login"
+ADMIN_ROLES = {"admin", "superadmin"}
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def check_admin_login(username: str, password: str) -> bool:
+    with sqlite3.connect(DB_PATH) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id
+            FROM admin_users
+            WHERE username = ? AND password_hash = ?
+            """,
+            (username, hash_password(password)),
+        )
+        return cursor.fetchone() is not None
+
+
+def get_admin_by_username(username: str):
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, role
+            FROM admin_users
+            WHERE username = ?
+            """,
+            (username,),
+        )
+        admin_user = cursor.fetchone()
+        return dict(admin_user) if admin_user else None
+
+
+def get_current_admin(request: Request):
+    username = request.cookies.get(ADMIN_COOKIE_NAME)
+    if not username:
+        return None
+
+    return get_admin_by_username(username)
+
+
+def is_admin_authorized(request: Request) -> bool:
+    return get_current_admin(request) is not None
+
+
+def is_superadmin(request: Request) -> bool:
+    admin_user = get_current_admin(request)
+    return admin_user is not None and admin_user["role"] == "superadmin"
+
+
+def require_admin(request: Request) -> None:
+    if is_admin_authorized(request):
+        return
+
+    if request.method == "GET":
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"Location": "/admin/login"},
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Admin authorization required",
+    )
+
+
+def require_superadmin(request: Request) -> None:
+    require_admin(request)
+
+    if not is_superadmin(request):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superadmin can manage admins",
+        )
+
+
+def get_admin_template_context(request: Request):
+    return {
+        "current_admin": get_current_admin(request),
+        "is_superadmin": is_superadmin(request),
+    }
 
 
 def has_column(cursor: sqlite3.Cursor, table_name: str, column_name: str) -> bool:
@@ -50,6 +137,23 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'admin'
+            )
+            """
+        )
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO admin_users (username, password_hash, role)
+            VALUES (?, ?, ?)
+            """,
+            ("admin", hash_password("admin"), "superadmin"),
         )
         cursor.execute(
             """
@@ -219,6 +323,89 @@ def delete_abonement(abonement_id: int):
         connection.commit()
 
 
+def get_admin_users():
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, role
+            FROM admin_users
+            ORDER BY id
+            """
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def create_admin_user(username: str, password: str, role: str):
+    with sqlite3.connect(DB_PATH) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO admin_users (username, password_hash, role)
+            VALUES (?, ?, ?)
+            """,
+            (username, hash_password(password), role),
+        )
+        connection.commit()
+
+
+def update_admin_role(admin_id: int, role: str):
+    with sqlite3.connect(DB_PATH) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE admin_users
+            SET role = ?
+            WHERE id = ?
+            """,
+            (role, admin_id),
+        )
+        connection.commit()
+
+
+def delete_admin_user(admin_id: int):
+    with sqlite3.connect(DB_PATH) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            DELETE FROM admin_users
+            WHERE id = ?
+            """,
+            (admin_id,),
+        )
+        connection.commit()
+
+
+def get_admin_user(admin_id: int):
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, role
+            FROM admin_users
+            WHERE id = ?
+            """,
+            (admin_id,),
+        )
+        admin_user = cursor.fetchone()
+        return dict(admin_user) if admin_user else None
+
+
+def count_superadmins():
+    with sqlite3.connect(DB_PATH) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM admin_users
+            WHERE role = 'superadmin'
+            """
+        )
+        return cursor.fetchone()[0]
+
+
 def get_registrations_stats():
     registrations = get_registrations()
     total_registrations = len(registrations)
@@ -264,26 +451,209 @@ async def read_main_page(request: Request):
     )
 
 
+@app.get("/admin/login", response_class=HTMLResponse)
+async def read_admin_login_page(request: Request):
+    if is_admin_authorized(request):
+        return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_login.html",
+        context={"error": ""},
+    )
+
+
+@app.post("/admin/login", response_class=HTMLResponse)
+async def handle_admin_login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    if not check_admin_login(username, password):
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context={
+                "error": "Неверный логин или пароль.",
+            },
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    response = RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key=ADMIN_COOKIE_NAME,
+        value=username,
+        httponly=True,
+        samesite="lax",
+    )
+    return response
+
+
+@app.post("/admin/logout")
+async def handle_admin_logout():
+    response = RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie(ADMIN_COOKIE_NAME)
+    return response
+
+
+def get_admin_users_context(request: Request, error: str = "", success: str = ""):
+    return {
+        **get_admin_template_context(request),
+        "admin_users": get_admin_users(),
+        "roles": [
+            {"value": "admin", "title": "Админ"},
+            {"value": "superadmin", "title": "Главный админ"},
+        ],
+        "error": error,
+        "success": success,
+    }
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def read_admin_users_page(request: Request, _: None = Depends(require_superadmin)):
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_users.html",
+        context=get_admin_users_context(request),
+    )
+
+
+@app.post("/admin/users/create", response_class=HTMLResponse)
+async def handle_create_admin_user(
+    request: Request,
+    _: None = Depends(require_superadmin),
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...),
+):
+    username = username.strip()
+    password = password.strip()
+    role = role.strip()
+
+    if not username or not password:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Заполните логин и пароль."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if role not in ADMIN_ROLES:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Выберите правильную роль."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        create_admin_user(username, password, role)
+    except sqlite3.IntegrityError:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Админ с таким логином уже есть."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/admin/users/update/{admin_id}", response_class=HTMLResponse)
+async def handle_update_admin_user_role(
+    request: Request,
+    admin_id: int,
+    _: None = Depends(require_superadmin),
+    role: str = Form(...),
+):
+    role = role.strip()
+    admin_user = get_admin_user(admin_id)
+
+    if admin_user is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Админ не найден."),
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    if role not in ADMIN_ROLES:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Выберите правильную роль."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if admin_user["role"] == "superadmin" and role != "superadmin" and count_superadmins() <= 1:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Нельзя убрать последнего главного админа."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    update_admin_role(admin_id, role)
+    return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/admin/users/delete/{admin_id}", response_class=HTMLResponse)
+async def handle_delete_admin_user(
+    request: Request,
+    admin_id: int,
+    _: None = Depends(require_superadmin),
+):
+    admin_user = get_admin_user(admin_id)
+    current_admin = get_current_admin(request)
+
+    if admin_user is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Админ не найден."),
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    if current_admin and admin_user["id"] == current_admin["id"]:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Нельзя удалить самого себя."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if admin_user["role"] == "superadmin" and count_superadmins() <= 1:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_users.html",
+            context=get_admin_users_context(request, error="Нельзя удалить последнего главного админа."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    delete_admin_user(admin_id)
+    return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+
 @app.get("/admin", response_class=HTMLResponse)
-async def read_admin_page(request: Request):
+async def read_admin_page(request: Request, _: None = Depends(require_admin)):
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context=get_registrations_stats(),
+        context={**get_registrations_stats(), **get_admin_template_context(request)},
     )
 
 
 @app.get("/admin/abonements", response_class=HTMLResponse)
-async def read_admin_abonements_page(request: Request):
+async def read_admin_abonements_page(request: Request, _: None = Depends(require_admin)):
     return templates.TemplateResponse(
         request=request,
         name="admin_abonements.html",
-        context=get_abonements_stats(),
+        context={**get_abonements_stats(), **get_admin_template_context(request)},
     )
 
 
 @app.post("/admin/delete/{registration_id}")
-async def handle_delete_registration(registration_id: int):
+async def handle_delete_registration(registration_id: int, _: None = Depends(require_admin)):
     delete_registration(registration_id)
     return JSONResponse(
         content={
@@ -295,7 +665,7 @@ async def handle_delete_registration(registration_id: int):
 
 
 @app.post("/admin/abonements/delete/{abonement_id}")
-async def handle_delete_abonement(abonement_id: int):
+async def handle_delete_abonement(abonement_id: int, _: None = Depends(require_admin)):
     delete_abonement(abonement_id)
     return JSONResponse(
         content={
@@ -308,6 +678,7 @@ async def handle_delete_abonement(abonement_id: int):
 
 @app.post("/admin/abonements/create")
 async def handle_create_abonement(
+    _: None = Depends(require_admin),
     name: str = Form(...),
     phone: str = Form(...),
     abonement: str = Form(...),
@@ -336,6 +707,7 @@ async def handle_create_abonement(
 @app.post("/admin/abonements/update/{abonement_id}")
 async def handle_update_abonement(
     abonement_id: int,
+    _: None = Depends(require_admin),
     name: str = Form(...),
     phone: str = Form(...),
     abonement: str = Form(...),
@@ -362,7 +734,11 @@ async def handle_update_abonement(
 
 
 @app.post("/admin/abonements/adjust/{abonement_id}")
-async def handle_adjust_abonement(abonement_id: int, delta: int = Form(...)):
+async def handle_adjust_abonement(
+    abonement_id: int,
+    _: None = Depends(require_admin),
+    delta: int = Form(...),
+):
     remaining_visits = adjust_abonement_visits(abonement_id, delta)
     if remaining_visits is None:
         return JSONResponse(
@@ -381,7 +757,7 @@ async def handle_adjust_abonement(abonement_id: int, delta: int = Form(...)):
 
 
 @app.post("/admin/abonements/refresh/{abonement_id}")
-async def handle_refresh_abonement(abonement_id: int):
+async def handle_refresh_abonement(abonement_id: int, _: None = Depends(require_admin)):
     remaining_visits = refresh_abonement(abonement_id)
     if remaining_visits is None:
         return JSONResponse(

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STRIKE | Абонементы</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='admin_abonements.css') }}">
 </head>
 <body>
     <header>
@@ -13,9 +13,14 @@
         <nav>
             <a href="/admin">Запросы</a>
             <a href="/admin/abonements" class="nav-active">Абонементы</a>
+            {% if is_superadmin %}
+            <a href="/admin/users">Админы</a>
+            {% endif %}
             <a href="/">Сайт</a>
         </nav>
-        <a href="/" class="btn">На главную</a>
+        <form method="post" action="/admin/logout">
+            <button type="submit" class="btn">Выйти</button>
+        </form>
     </header>
 
     <main class="admin-page">

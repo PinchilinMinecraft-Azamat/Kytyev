@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRIKE | Админы</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='admin_users.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">Strike</div>
+        <nav>
+            <a href="/admin">Запросы</a>
+            <a href="/admin/abonements">Абонементы</a>
+            <a href="/admin/users" class="nav-active">Админы</a>
+            <a href="/">Сайт</a>
+        </nav>
+        <form method="post" action="/admin/logout">
+            <button type="submit" class="btn">Выйти</button>
+        </form>
+    </header>
+
+    <main class="admin-page">
+        <section class="admin-top">
+            <div>
+                <p class="admin-label">Права доступа</p>
+                <h1>Управление админами</h1>
+                <p class="admin-text">Создание новых администраторов и настройка роли доступа.</p>
+            </div>
+        </section>
+
+        <section class="admin-create-section">
+            <h2>Добавить <span>админа</span></h2>
+            <div class="card form-card">
+                <form class="admin-user-form" method="post" action="/admin/users/create">
+                    <input type="text" name="username" placeholder="Логин" required>
+                    <input type="password" name="password" placeholder="Пароль" required>
+                    <select name="role" required>
+                        <option value="admin">Админ</option>
+                        <option value="superadmin">Главный админ</option>
+                    </select>
+                    <button type="submit" class="btn">Создать</button>
+                </form>
+                {% if error %}
+                <p class="form-error">{{ error }}</p>
+                {% endif %}
+                {% if success %}
+                <p class="form-success">{{ success }}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section id="schedule">
+            <h2>Все <span>админы</span></h2>
+            <div class="schedule-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Логин</th>
+                            <th>Роль</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admin_user in admin_users %}
+                        <tr>
+                            <td>{{ admin_user.id }}</td>
+                            <td>{{ admin_user.username }}</td>
+                            <td>
+                                <form class="role-form" method="post" action="/admin/users/update/{{ admin_user.id }}">
+                                    <select name="role">
+                                        <option value="admin" {% if admin_user.role == 'admin' %}selected{% endif %}>Админ</option>
+                                        <option value="superadmin" {% if admin_user.role == 'superadmin' %}selected{% endif %}>Главный админ</option>
+                                    </select>
+                                    <button type="submit" class="save-btn">Сохранить</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/users/delete/{{ admin_user.id }}">
+                                    <button type="submit" class="delete-btn">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>
+            <p>2026 STRIKE Sports Club. Панель администратора.</p>
+        </footer>
+    </main>
+</body>
+</html>
