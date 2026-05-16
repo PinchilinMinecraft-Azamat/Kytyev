@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание ГАПОУ СКиПТ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #222222;
+            background: #f2f2f2;
+        }
+
+        .page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+
+        .info {
+            margin: 0 0 18px 0;
+            color: #666666;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: white;
+            border: 1px solid #cccccc;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        select,
+        button,
+        .reset {
+            width: 100%;
+            height: 38px;
+            padding: 6px 8px;
+            border: 1px solid #aaaaaa;
+            background: white;
+            color: #222222;
+            font: inherit;
+        }
+
+        button {
+            margin-top: 23px;
+            background: #2f6fed;
+            border-color: #2f6fed;
+            color: white;
+            cursor: pointer;
+        }
+
+        .reset {
+            display: block;
+            margin-top: 8px;
+            height: auto;
+            text-align: center;
+            text-decoration: none;
+            line-height: 24px;
+        }
+
+        .error,
+        .empty {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            border: 1px solid #cccccc;
+        }
+
+        .error {
+            color: #a33a00;
+        }
+
+        .day {
+            margin-bottom: 22px;
+        }
+
+        .day h2 {
+            margin: 0 0 10px 0;
+            font-size: 21px;
+        }
+
+        .lesson {
+            display: grid;
+            grid-template-columns: 90px 1fr 140px;
+            gap: 12px;
+            align-items: start;
+            padding: 13px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #cccccc;
+        }
+
+        .pair {
+            font-weight: bold;
+            color: #2f6fed;
+        }
+
+        .subject {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .text {
+            color: #555555;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .kind {
+            text-align: right;
+            color: #555555;
+        }
+
+        @media (max-width: 760px) {
+            .page {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            button {
+                margin-top: 0;
+            }
+
+            .lesson {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+
+            .kind {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>Расписание ГАПОУ СКиПТ</h1>
+        <p class="info">Показано {{ shown_count }} из {{ total_count }} занятий. Обновлено: {{ updated }}.</p>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form class="filters" method="get">
+            <div>
+                <label for="group">Группа</label>
+                <select id="group" name="group">
+                    <option value="">Все группы</option>
+                    {% for group in groups %}
+                        <option value="{{ group }}" {% if group == selected_group %}selected{% endif %}>{{ group }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="date">Дата</label>
+                <select id="date" name="date">
+                    <option value="">Все даты</option>
+                    {% for item in dates %}
+                        <option value="{{ item }}" {% if item == selected_date %}selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="kind">Тип занятия</label>
+                <select id="kind" name="kind">
+                    <option value="">Все типы</option>
+                    {% for item in kinds %}
+                        <option value="{{ item }}" {% if item == selected_kind %}selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <button type="submit">Показать</button>
+                <a class="reset" href="/">Сбросить</a>
+            </div>
+        </form>
+
+        {% if days %}
+            {% for date, lessons in days.items() %}
+                <section class="day">
+                    <h2>{{ lessons[0].day }}, {{ date }}</h2>
+
+                    {% for lesson in lessons %}
+                        <div class="lesson">
+                            <div class="pair">{{ lesson.pair }} пара</div>
+
+                            <div>
+                                <div class="subject">{{ lesson.subject }}</div>
+                                <div class="text">
+                                    {{ lesson.group }}, {{ lesson.subgroup }}
+                                    {% if lesson.room %}<br>Кабинет: {{ lesson.room }}{% endif %}
+                                    {% if lesson.teacher %}<br>Преподаватель: {{ lesson.teacher }}{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="kind">{{ lesson.kind }}</div>
+                        </div>
+                    {% endfor %}
+                </section>
+            {% endfor %}
+        {% else %}
+            <div class="empty">По выбранным фильтрам занятий нет.</div>
+        {% endif %}
+    </div>
+</body>
+</html>
