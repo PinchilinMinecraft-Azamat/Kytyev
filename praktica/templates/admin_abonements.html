@@ -58,6 +58,7 @@
                     <input type="text" name="phone" placeholder="Телефон" required>
                     <input type="text" name="abonement" placeholder="Название абонемента" required>
                     <input type="number" name="total_visits" placeholder="Количество посещений" min="1" value="8" required>
+                    <input type="number" name="price" placeholder="Цена (₽)" min="0" value="0" step="0.01">
                     <button type="submit" class="btn">Создать</button>
                 </form>
                 <p class="form-message" id="create-abonement-message"></p>
@@ -78,6 +79,7 @@
                             <th>Абонемент</th>
                             <th>Всего</th>
                             <th>Осталось</th>
+                            <th>Цена</th>
                             <th>Дата</th>
                             <th>Действие</th>
                         </tr>
@@ -97,6 +99,7 @@
                                     <button type="button" class="visit-btn" data-id="{{ item.id }}" data-delta="1">+</button>
                                 </div>
                             </td>
+                            <td><input class="table-input price-input" type="number" name="price" form="update-abonement-form-{{ item.id }}" value="{{ item.price }}" min="0" step="0.01"></td>
                             <td>{{ item.created_at }}</td>
                             <td>
                                 <div class="row-actions">

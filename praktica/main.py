@@ -134,10 +134,14 @@ def init_db():
                 abonement TEXT NOT NULL,
                 total_visits INTEGER NOT NULL DEFAULT 8,
                 remaining_visits INTEGER NOT NULL DEFAULT 8,
+                price REAL NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+
+        if not has_column(cursor, "abonements", "price"):
+            cursor.execute("ALTER TABLE abonements ADD COLUMN price REAL NOT NULL DEFAULT 0")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS admin_users (
@@ -192,15 +196,15 @@ def get_registrations():
         return [dict(row) for row in cursor.fetchall()]
 
 
-def save_abonement(name: str, phone: str, abonement: str, total_visits: int):
+def save_abonement(name: str, phone: str, abonement: str, total_visits: int, price: float = 0):
     with sqlite3.connect(DB_PATH) as connection:
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO abonements (name, phone, abonement, total_visits, remaining_visits)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO abonements (name, phone, abonement, total_visits, remaining_visits, price)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (name, phone, abonement, total_visits, total_visits),
+            (name, phone, abonement, total_visits, total_visits, price),
         )
         connection.commit()
 
@@ -211,7 +215,7 @@ def get_abonements():
         cursor = connection.cursor()
         cursor.execute(
             """
-            SELECT id, name, phone, abonement, total_visits, remaining_visits, created_at
+            SELECT id, name, phone, abonement, total_visits, remaining_visits, price, created_at
             FROM abonements
             ORDER BY datetime(created_at) DESC, id DESC
             """
@@ -219,7 +223,7 @@ def get_abonements():
         return [dict(row) for row in cursor.fetchall()]
 
 
-def update_abonement(abonement_id: int, name: str, phone: str, abonement: str, total_visits: int):
+def update_abonement(abonement_id: int, name: str, phone: str, abonement: str, total_visits: int, price: float = 0):
     with sqlite3.connect(DB_PATH) as connection:
         cursor = connection.cursor()
         cursor.execute(
@@ -230,10 +234,11 @@ def update_abonement(abonement_id: int, name: str, phone: str, abonement: str, t
                 phone = ?,
                 abonement = ?,
                 total_visits = ?,
-                remaining_visits = MIN(remaining_visits, ?)
+                remaining_visits = MIN(remaining_visits, ?),
+                price = ?
             WHERE id = ?
             """,
-            (name, phone, abonement, total_visits, total_visits, abonement_id),
+            (name, phone, abonement, total_visits, total_visits, price, abonement_id),
         )
         connection.commit()
 
@@ -683,6 +688,7 @@ async def handle_create_abonement(
     phone: str = Form(...),
     abonement: str = Form(...),
     total_visits: int = Form(...),
+    price: float = Form(0),
 ):
     name = name.strip()
     phone = phone.strip()
@@ -700,7 +706,7 @@ async def handle_create_abonement(
             content={"status_ok": False, "message": "Количество посещений должно быть больше 0."},
         )
 
-    save_abonement(name, phone, abonement, total_visits)
+    save_abonement(name, phone, abonement, total_visits, price)
     return JSONResponse(content={"status_ok": True, **get_abonements_stats()})
 
 
@@ -712,6 +718,7 @@ async def handle_update_abonement(
     phone: str = Form(...),
     abonement: str = Form(...),
     total_visits: int = Form(...),
+    price: float = Form(0),
 ):
     name = name.strip()
     phone = phone.strip()
@@ -729,7 +736,7 @@ async def handle_update_abonement(
             content={"status_ok": False, "message": "Количество посещений должно быть больше 0."},
         )
 
-    update_abonement(abonement_id, name, phone, abonement, total_visits)
+    update_abonement(abonement_id, name, phone, abonement, total_visits, price)
     return JSONResponse(content={"status_ok": True, **get_abonements_stats()})
 
 
@@ -773,6 +780,23 @@ async def handle_refresh_abonement(abonement_id: int, _: None = Depends(require_
             **get_abonements_stats(),
         }
     )
+
+@app.get("/api/abonements/pricing")
+async def get_abonement_pricing():
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT abonement, total_visits, price
+            FROM abonements
+            WHERE price > 0
+            GROUP BY abonement
+            ORDER BY price
+            """
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
 
 @app.post("/submit_register")
 async def handle_form_register(
